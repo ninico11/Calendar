@@ -1,8 +1,5 @@
 import React, { useState, useEffect } from "react";
 import Fullcalendar from "@fullcalendar/react";
-// import Calendar from "@fullcalendar/react";
-// import calendarEl from "@fullcalendar/react";
-// import getEventById from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
@@ -13,24 +10,12 @@ import * as bootstrap from "bootstrap";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "./calendar.css";
 
-// var calendar = new Calendar(calendarEl, {
-//   timeZone: 'UTC',
-//   events: [
-//     {
-//       id: 'a',
-//       title: 'my event',
-//       start: '2018-09-01'
-//     }
-//   ]
-// })
-
-// var event = calendar.getEventById('a') // an event object!
-// var start = event.start // a property (a Date object)
-// console.log(start.toISOString()) // "2018-09-01T00:00:00.000Z"
-
 function CalendarS() {
   const [isDarkTheme, setIsDarkTheme] = useState(true);
-  const [events, setEvents] = useState([]);
+  const [events, setEvents] = useState(() => {
+    const localData = localStorage.getItem('calendarEvents');
+    return localData ? JSON.parse(localData) : [];
+  });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState({
     title: '',
@@ -38,6 +23,11 @@ function CalendarS() {
     end: '',
     id: null
   }); // Track selected event for editing
+  
+  useEffect(() => {
+    // Save updated events to local storage whenever the events state changes
+    localStorage.setItem("calendarEvents", JSON.stringify(events));
+  }, [events]); // Only run when the events state changes
 
   const handleOpen = () => setIsModalOpen(true);
   const handleClose = () => setIsModalOpen(false);
@@ -57,7 +47,6 @@ function CalendarS() {
       // Add new event with a unique ID
       setEvents([...events, { ...selectedEvent, id: Math.random() * 100000 }]);
     }
-    
     // Clear the new event form
     setSelectedEvent({ title: "", start: "", end: "", id: null });
     // Close the modal
@@ -77,7 +66,6 @@ function CalendarS() {
 
       // Update the events state with the filtered array
       setEvents(filteredEvents);
-
       // Clear the selected event and new event form
       setSelectedEvent({ title: "", start: "", end: "", id: null });
       handleClose();
