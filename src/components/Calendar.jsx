@@ -30,64 +30,78 @@ import "./calendar.css";
 
 function CalendarS() {
   const [isDarkTheme, setIsDarkTheme] = useState(true);
-  const [selectedDate, setSelectedDate] = useState(null);
   const [events, setEvents] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newEvent, setNewEvent] = useState({
-    title: "",
-    start: new Date().toISOString().slice(0, 16),
-    end: new Date().toISOString().slice(0, 16),
-    id: null, // Add an ID for the new event
-  });
+  const [selectedEvent, setSelectedEvent] = useState({
+    title: '',
+    start: '',
+    end: '',
+    id: null
+  }); // Track selected event for editing
+
   const handleOpen = () => setIsModalOpen(true);
   const handleClose = () => setIsModalOpen(false);
 
   const handleEventAdd = () => {
     // Validate event data
-    if (!newEvent.title || !newEvent.start || !newEvent.end) {
+    if (!selectedEvent.title || !selectedEvent.start || !selectedEvent.end) {
       alert("Please fill in all required fields: Title, Start, and End.");
       return;
     }
-
-    // Add new event with a unique ID
-    setNewEvent({ ...newEvent, id: Math.random() * 100000 }); // Generate a random ID
-    setEvents([...events, newEvent]);
-
+    if (selectedEvent.id) {
+      // Update existing event
+      setEvents(
+        events.map((event) => (event.id === selectedEvent.id ? selectedEvent : event))
+      );
+    } else {
+      // Add new event with a unique ID
+      setEvents([...events, { ...selectedEvent, id: Math.random() * 100000 }]);
+    }
+    
     // Clear the new event form
-    setNewEvent({ title: "", start: "", end: "", id: null });
-
+    setSelectedEvent({ title: "", start: "", end: "", id: null });
     // Close the modal
     handleClose();
   };
 
-  const handleEventDelete = (eventId) => {
-    // Filter the events array, ensuring strict comparison
-    const filteredEvents = events.filter(
-      (event) => event.id !== eventId
-    );
-  
-    // Update the events state with the filtered array
-    setEvents(filteredEvents);
-  
-    // Clear the new event form after deletion
-    setNewEvent({ title: "", start: "", end: "", id: null });
-    handleClose();
+  const handleEventDelete = () => {
+    if (selectedEvent.id) {
+      if (!selectedEvent.id) {
+        return; // No event selected for deletion
+      }
+
+      // Filter the events array, ensuring strict comparison
+      const filteredEvents = events.filter(
+        (event) => event.id !== selectedEvent.id
+      );
+
+      // Update the events state with the filtered array
+      setEvents(filteredEvents);
+
+      // Clear the selected event and new event form
+      setSelectedEvent({ title: "", start: "", end: "", id: null });
+      handleClose();
+   }
   };
 
   const handleEventClick = (info) => {
-    // Open modal in edit mode with pre-filled event details
-    setNewEvent({
-      title: info.event.title,
-      start: info.event.start,
-      end: info.event.end,
-      id: info.event.id,
-    });
+    console.log(events);
+    const matchingEvent = events.find(
+      (event) => String(event.id) === String(info.event.id)
+    );
+    console.log(matchingEvent);
+    setSelectedEvent({
+      title: matchingEvent.title,
+      start: matchingEvent.start,
+      end: matchingEvent.end,
+      id: matchingEvent.id,
+    });; // Pre-fill modal with event details
     handleOpen();
   };
 
   const toggleTheme = () => {
     setIsDarkTheme(!isDarkTheme);
-
+    
     // Apply CSS classes based on the theme state
     const calendarContainer = document.getElementById("calendar");
     if (isDarkTheme) {
@@ -95,18 +109,18 @@ function CalendarS() {
     } else {
       calendarContainer.classList.remove("dark-theme");
     }
-  };
+ };
 
   const style = {
-    position: "absolute",
-    top: "50%",
-    left: "50%",
-    transform: "translate(-50%, -50%)",
-    width: 400,
-    bgcolor: "background.paper",
-    border: "2px solid #000",
-    boxShadow: 24,
-    p: 4,
+  position: "absolute",
+  top: "50%",
+  left: "50%",
+  transform: "translate(-50%, -50%)",
+  width: 400,
+  bgcolor: "background.paper",
+  border: "2px solid #000",
+  boxShadow: 24,
+  p: 4,
   };
 
   return (
@@ -138,43 +152,44 @@ function CalendarS() {
       <Button onClick={toggleTheme}>
         {isDarkTheme ? "Light Theme" : "Dark Theme"}
       </Button>
-      <Modal
-        open={isModalOpen}
-        onClose={handleClose}
-        aria-labelledby="modal-modal-title"
-        aria-describedby="modal-modal-description"
-      >
+      <Modal open={isModalOpen} onClose={handleClose} aria-labelledby="modal-title">
         <Box sx={style}>
-        <Typography id="modal-modal-title" variant="h6" component="h2">
-          {newEvent.id ? "Edit Event" : "Add Event"}
-        </Typography>
-<TextField
-  label="Title"
-  value={newEvent.title}
-  onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
-/>
-<TextField
-  label="Start Date/Time"
-  type="datetime-local"
-  value={newEvent.start}
-  onChange={(e) => setNewEvent({ ...newEvent, start: e.target.value })}
-/>
-<TextField
-  label="End Date/Time"
-  type="datetime-local"
-  value={newEvent.end}
-  onChange={(e) => setNewEvent({ ...newEvent, end: e.target.value })}
-/>
-<Button onClick={handleEventAdd}>
-  {newEvent.id ? "Save Changes" : "Save"}
-</Button>
-{newEvent.id && (
-  <Button onClick={() => handleEventDelete(newEvent.id)}>Delete</Button>
-)}
-</Box>
-</Modal>
-</div>
-);
+          <Typography id="modal-title" variant="h6" component="h2">
+            {selectedEvent?.id ? "Edit Event" : "Add Event"}
+          </Typography>
+          <TextField
+            label="Title"
+            value={selectedEvent?.title}
+            onChange={(e) =>
+              setSelectedEvent({ ...selectedEvent, title: e.target.value })
+            }
+          />
+          <TextField
+            label="Start Date/Time"
+            type="datetime-local"
+            value={selectedEvent?.start}
+            onChange={(e) =>
+              setSelectedEvent({ ...selectedEvent, start: e.target.value })
+            }
+          />
+          <TextField
+            label="End Date/Time"
+            type="datetime-local"
+            value={selectedEvent?.end}
+            onChange={(e) =>
+              setSelectedEvent({ ...selectedEvent, end: e.target.value })
+            }
+          />
+          <Button onClick={handleEventAdd}>
+            {selectedEvent?.id ? "Save Changes" : "Save"}
+          </Button>
+          {selectedEvent?.id && (
+            <Button onClick={handleEventDelete}>Delete</Button>
+          )}
+        </Box>
+      </Modal>
+    </div>
+  );
 }
 
 export default CalendarS;
