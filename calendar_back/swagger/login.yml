@@ -1,0 +1,54 @@
+swagger: '2.0'
+info:
+  title: User Login API
+  description: API for logging in existing users.
+  version: 1.0
+
+paths:
+  /login:
+    post:
+      summary: Login user
+      description: Allows a user to log in with their credentials.
+      tags: [User]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  description: The username for the user.
+                  required: true
+                password:
+                  type: string
+                  description: The password for the user.
+                  required: true
+      responses:
+        200:
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                    description: JWT access token
+        401:
+          description: Invalid username or password
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: Error message
+        400:
+          description: Bad request (e.g., missing data)
+          content: {}
+        500:
+          description: Internal server error
+          content: {}
