@@ -37,6 +37,7 @@ class User(db.Model):
     username = db.Column(db.String(50), unique=True, nullable=False)
     password = db.Column(db.String(100), nullable=False)
     events = db.relationship('Event', backref='user', lazy=True)
+    permissions = db.Column(db.JSON, nullable=False, default=lambda: ["Read", "Write", "Delete"])
 
 # Define your Event model
 class Event(db.Model):
@@ -45,11 +46,17 @@ class Event(db.Model):
     start = db.Column(db.DateTime, nullable=False)
     end = db.Column(db.DateTime, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
+# Helper function to check permissions
+def has_permission(user_id, permission):
+    user = User.query.get(user_id)
+    return permission in user.permissions
+
 # User Registration endpoint
 @app.route('/register', methods=['POST'])
 def register():
     data = request.json
-    new_user = User(username=data['username'], password=data['password'])
+    new_user = User(username=data['username'], password=data['password'], permissions=["Read", "Write", "Delete"])
     db.session.add(new_user)
     db.session.commit()
     return jsonify({'message': 'User registered successfully'}), 201
@@ -79,6 +86,64 @@ def get_all_users():
     users = User.query.all()
     users_list = [{'id': user.id, 'username': user.username} for user in users]
     return jsonify(users_list), 200
+
+# Save events for a user endpoint
+@app.route('/events', methods=['POST'])
+@jwt_required()
+def save_events():
+    current_user = get_jwt_identity()
+    if not has_permission(current_user, 'Write'):
+        return jsonify({'message': 'Permission denied'}), 403
+
+    data = request.json
+    events = data.get('events', [])
+    
+    for event_data in events:
+        new_event = Event(
+            title=event_data['title'],
+            start=datetime.datetime.strptime(event_data['start'], '%Y-%m-%dT%H:%M:%S'),
+            end=datetime.datetime.strptime(event_data['end'], '%Y-%m-%dT%H:%M:%S'),
+            user_id=current_user
+        )
+        db.session.add(new_event)
+    
+    db.session.commit()
+    return jsonify({'message': 'Events saved successfully'}), 201
+
+# Get events for a user endpoint
+@app.route('/events', methods=['GET'])
+@jwt_required()
+def get_events():
+    current_user = get_jwt_identity()
+    if not has_permission(current_user, 'Read'):
+        return jsonify({'message': 'Permission denied'}), 403
+
+    events = Event.query.filter_by(user_id=current_user).all()
+    events_list = [{
+        'id': event.id,
+        'title': event.title,
+        'start': event.start.isoformat(),
+        'end': event.end.isoformat()
+    } for event in events]
+    
+    return jsonify(events_list), 200
+
+# Delete selected events endpoint
+@app.route('/events/delete', methods=['DELETE'])
+@jwt_required()
+def delete_events():
+    current_user = get_jwt_identity()
+    if not has_permission(current_user, 'Delete'):
+        return jsonify({'message': 'Permission denied'}), 403
+
+    data = request.json
+    event_ids = data.get('event_ids', [])
+    
+    # Query and delete the selected events
+    Event.query.filter(Event.id.in_(event_ids), Event.user_id == current_user).delete(synchronize_session=False)
+    
+    db.session.commit()
+    return jsonify({'message': 'Events deleted successfully'}), 200
 
 if __name__ == '__main__':
     with app.app_context():

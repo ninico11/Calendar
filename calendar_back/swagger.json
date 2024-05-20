@@ -55,7 +55,12 @@
                 "description": "Refresh access token",
                 "responses": {
                     "200": {"description": "Access token refreshed successfully"}
-                }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
             }
         },
         "/users": {
@@ -65,6 +70,106 @@
                     "200": {"description": "List of all users"}
                 }
             }
+        },
+        "/events": {
+            "post": {
+                "description": "Save events for a user",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "events": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "title": {"type": "string"},
+                                            "start": {"type": "string", "format": "date-time"},
+                                            "end": {"type": "string", "format": "date-time"}
+                                        },
+                                        "required": ["title", "start", "end"]
+                                    }
+                                }
+                            },
+                            "required": ["events"]
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {"description": "Events saved successfully"}
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            },
+            "get": {
+                "description": "Get events for a user",
+                "responses": {
+                    "200": {
+                        "description": "List of user's events",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "id": {"type": "integer"},
+                                    "title": {"type": "string"},
+                                    "start": {"type": "string", "format": "date-time"},
+                                    "end": {"type": "string", "format": "date-time"}
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/events/delete": {
+            "delete": {
+                "description": "Delete selected events for a user",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "event_ids": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "integer"
+                                    }
+                                }
+                            },
+                            "required": ["event_ids"]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {"description": "Events deleted successfully"}
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
         }
     }
 }
